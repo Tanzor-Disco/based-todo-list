@@ -1,5 +1,6 @@
 :root {
 	--center: #f5f7f5;
+	--accent: #2E7D32;
 }
 
 body {
@@ -36,3 +37,7 @@ input {
 	width:200px;
 }
 
+a {
+	text-decoration: none;
+	color:var(--accent);
+}

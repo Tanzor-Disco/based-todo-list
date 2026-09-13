@@ -8,7 +8,7 @@ interface TasksListProps {
 
 export default function TaskList({Tasks}:TasksListProps) {
 	const taskComponents = Tasks.map((task) => {
-		return <Task key = {task.ID} Description={task.Description} /> 
+		return <Task key = {task.TaskID} Description={task.Description} /> 
 	})
 	return (
 		taskComponents

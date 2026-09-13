@@ -1,4 +1,4 @@
 export default interface TaskData {
-	ID:number;
+	TaskID:number;
 	Description:string;
 }

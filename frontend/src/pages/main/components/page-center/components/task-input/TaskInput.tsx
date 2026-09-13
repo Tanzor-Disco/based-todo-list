@@ -4,19 +4,31 @@ import type { Dispatch, SetStateAction } from "react"
 
 interface TaskInputProps {
 	setTasks:Dispatch<SetStateAction<TaskData[]>>;
-	lenTasks: number;
 }
 
-export default function TaskInput({setTasks,lenTasks}:TaskInputProps) {
+export default function TaskInput({setTasks}:TaskInputProps) {
 	async function handleSubmit(formData: FormData) {
 		const formDataObj = Object.fromEntries(formData)
+		const response = await fetch("api/main/task/create",{
+			method:"POST",
+			headers: {
+				"Content-Type": "application/json",
+    		},
+			body:JSON.stringify(formDataObj)
+		})
+		
+		if (!response.ok) {
+			console.warn("The response from the server is not OK")
+			return
+		}
+
+		const taskID = await response.json()
+		
 		const newTask = {
-			ID:lenTasks,
+			TaskID:taskID as number,
 			Description:formDataObj.description as string
 		}
 		setTasks((prevTasks) => [...prevTasks,newTask])
-
-		
 	}
 	return (
 		<form action={handleSubmit}>

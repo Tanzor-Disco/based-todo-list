@@ -11,14 +11,12 @@ type Database struct {
 }
 
 func Connect(URI string) (Database, error) {
-	pool,err := pgxpool.New(context.Background(),URI)
+	pool, err := pgxpool.New(context.Background(), URI)
 	if err != nil {
-		return Database{}, fmt.Errorf("Connect: pgxpool.New: %w",err)
+		return Database{}, fmt.Errorf("Connect: pgxpool.New: %w", err)
 	}
 
-	return Database {
-		pool:pool,
+	return Database{
+		pool: pool,
 	}, nil
 }
-
-

@@ -1,10 +1,22 @@
 import "./Register.css"
 import LabelInput from "@/components/label-input/LabelInput"
 import logo from "@/assets/logo.svg"
+import { useNavigate } from "react-router-dom"
 
 export default function Register() {
+	const navigate = useNavigate()
 	async function handleSubmit(formData:FormData) {
-		
+		const formDataObj = Object.fromEntries(formData)	
+		const response = await fetch("/api/register",{
+			method:"POST",
+			headers: {
+				"Content-Type":"application/json",
+			},
+			body: JSON.stringify(formDataObj)
+		})
+		if (response.ok) {
+			navigate("/")
+		}
 	}
 	return (
 		<main className="register-page-center">
