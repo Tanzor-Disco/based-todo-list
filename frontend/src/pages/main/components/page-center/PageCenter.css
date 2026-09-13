@@ -1,0 +1,14 @@
+.page-center {
+	display:flex;
+	flex-direction: center;
+	align-items: center;
+	justify-content: center;
+	height:90vh;
+}
+
+.tasks-container {
+	padding: 20px;
+	background: var(--center);
+	border-radius: 16px;
+	min-width:300px;
+}

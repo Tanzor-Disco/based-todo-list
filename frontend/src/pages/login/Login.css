@@ -1,0 +1,32 @@
+.login-page-center{
+	display:flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height:90vh;
+	gap:30px;
+}
+
+.login-center-container {
+	display:flex;
+	background-color: var(--center);
+	min-width:300px;
+	border-radius:10px;
+	padding:10px;
+}
+
+.login-form {
+	width:100%;
+	display:flex;
+	flex-direction: column;
+	align-items: center;
+	gap:20px;
+}
+
+.login-submit {
+	width:236px;
+}
+
+.login-site-logo {
+	width:300px;
+}

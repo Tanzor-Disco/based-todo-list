@@ -1,0 +1,32 @@
+.register-page-center {
+	display:flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height:90vh;
+	gap:30px;
+}
+
+.register-center-container {
+	display:flex;
+	background-color: var(--center);
+	min-width:300px;
+	border-radius:10px;
+	padding:10px;
+}
+
+.register-form {
+	width:100%;
+	display:flex;
+	flex-direction: column;
+	align-items: center;
+	gap:20px;
+}
+
+.register-submit {
+	width:236px;
+}
+
+.register-site-logo {
+	width:300px;
+}

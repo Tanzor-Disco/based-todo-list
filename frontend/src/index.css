@@ -1,0 +1,38 @@
+:root {
+	--center: #f5f7f5;
+}
+
+body {
+	margin:0px;
+	font-size:16px;
+	background-color:white;
+	font-family: Inter, sans-serif;
+}
+
+p {
+	font-weight: 400;
+	font-size: 1rem;
+}
+
+h1 {
+	font-weight:700;
+	font-size:1.6rem;
+}
+
+button {
+	border: 2px solid black;
+	border-radius:10px;
+	background:white;
+	padding:8px 16px;
+	font-size: 1rem;
+}
+
+input {
+	border: 2px solid black;
+	border-radius:10px;
+	background:white;
+	outline: none;
+	padding:8px 16px;
+	width:200px;
+}
+
