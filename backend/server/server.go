@@ -57,6 +57,7 @@ func Run(URI string) error {
 	http.HandleFunc("/api/main/tasks", server.handleMainTasks)
 	http.HandleFunc("/api/login", server.handleLogin)
 	http.HandleFunc("/", handleStatic)
+	http.HandleFunc("/health",handleHealth)
 
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
