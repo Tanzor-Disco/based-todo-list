@@ -18,6 +18,10 @@
              contents: read
              packages: write
 
+       outputs:
+             image_ref: ${{ steps.publish.outputs.image_ref }}
+
+
        steps:
          - name: Checkout repository
            uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -164,4 +168,91 @@
                    --password-stdin
 
          - name: Push scanned image
-           run: docker push "$IMAGE"
+           id: publish
+           run: |
+             docker push "$IMAGE"
+
+             image_ref="$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')"
+             echo "image_ref=$image_ref" >> "$GITHUB_OUTPUT"
+
+     deploy:
+      name: Deploy and check live service
+      needs: checks
+      runs-on: [self-hosted, linux, x64, todo-deploy]
+      timeout-minutes: 10
+
+      permissions:
+        contents: read
+        packages: read
+
+      concurrency:
+        group: todo-lab3-good-deploy
+        cancel-in-progress: false
+
+      env:
+        APP_IMAGE: ${{ needs.checks.outputs.image_ref }}
+        POSTGRES_USER: todo
+        POSTGRES_DB: todo
+        POSTGRES_PASSWORD: ${{ secrets.TODO_DB_PASSWORD }}
+        COMPOSE_PROJECT_NAME: todo-lab3-good
+        COMPOSE_FILE: compose.deploy.good.yaml
+
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+          with:
+            persist-credentials: false
+
+        - name: Prepare deployment
+          run: |
+            if [ -z "$POSTGRES_PASSWORD" ]; then
+              echo "Create the TODO_DB_PASSWORD repository secret"
+              exit 1
+            fi
+            echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-config-good" >> "$GITHUB_ENV"
+
+        - name: Login to GHCR
+          env:
+            GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            mkdir -p "$DOCKER_CONFIG"
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io \
+              --username "$GITHUB_ACTOR" \
+              --password-stdin
+
+        - name: Pull images
+          run: docker compose pull
+
+        - name: Start and wait for healthy service
+          run: docker compose up -d --wait --wait-timeout 120
+
+        - name: Check live service
+          run: |
+            mkdir -p deploy-evidence
+            printf '%s\n' "$APP_IMAGE" > deploy-evidence/image.txt
+
+            curl \
+              --fail \
+              --show-error \
+              --silent \
+              --include \
+              --max-time 10 \
+              --output deploy-evidence/health.txt \
+              http://127.0.0.1:18081/health
+
+            cat deploy-evidence/health.txt
+            docker compose ps > deploy-evidence/containers.txt
+            cat deploy-evidence/containers.txt
+
+        - name: Show logs on failure
+          if: failure()
+          run: docker compose logs --tail 80
+
+        - name: Upload deployment evidence
+          if: always()
+          uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+          with:
+            name: deployment-${{ github.run_id }}-${{ github.run_attempt }}
+            path: deploy-evidence/
+            retention-days: 30
+            if-no-files-found: ignore
