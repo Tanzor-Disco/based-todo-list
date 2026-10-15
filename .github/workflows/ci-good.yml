@@ -62,7 +62,7 @@
          - name: Build frontend
            working-directory: frontend
            run: npm run build
-           
+
          - name: Prepare frontend for backend  # заменяет содержимое backend/server/static свежим результатом сборки frontend. Нужно из-за особеностей приложения
            run: |
               test -f frontend/dist/index.html
@@ -94,3 +94,59 @@
          - name: Show image
            run: docker image ls "$IMAGE"
 
+         - name: Install Trivy
+           uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+           with:
+             version: v0.76.0
+             cache: true
+
+         - name: Create vulnerability report
+           run: |
+               mkdir -p trivy-reports
+               printf '%s\n' "$IMAGE" > trivy-reports/image.txt
+
+               trivy image \
+                 --image-src docker \
+                 --scanners vuln \
+                 --format json \
+                 --output trivy-reports/trivy.json \
+                 --exit-code 0 \
+                 "$IMAGE"
+
+               trivy --version > trivy-reports/version.txt
+
+         - name: Show vulnerability report
+           run: |
+               trivy convert \
+                 --format table \
+                 --output trivy-reports/trivy.txt \
+                 trivy-reports/trivy.json
+
+               cat trivy-reports/trivy.txt
+
+               jq '
+                 [.Results[]? | .Vulnerabilities[]?] |
+                 {
+                   CRITICAL: (map(select(.Severity == "CRITICAL")) | length),
+                   HIGH: (map(select(.Severity == "HIGH")) | length)
+                 }
+               ' trivy-reports/trivy.json | tee trivy-reports/severity.json
+
+         - name: Block CRITICAL vulnerabilities
+           run: |
+               trivy image \
+                 --image-src docker \
+                 --scanners vuln \
+                 --severity CRITICAL \
+                 --exit-code 1 \
+                 --skip-db-update \
+                 "$IMAGE"
+
+         - name: Upload vulnerability reports
+           if: always()
+           uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+           with:
+             name: trivy-reports-${{ github.sha }}
+             path: trivy-reports/
+             retention-days: 30
+             if-no-files-found: ignore
