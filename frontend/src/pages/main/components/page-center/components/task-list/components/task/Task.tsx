@@ -1,7 +1,7 @@
 import "./Task.css"
 
 interface TaskProps {
-	Description: String;
+	Description: string;
 }
 
 export default function Task({Description}:TaskProps) {

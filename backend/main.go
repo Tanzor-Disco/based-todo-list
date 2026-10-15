@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Tanzor-Disco/based-todo-list/backend/server"
 	"github.com/Tanzor-Disco/based-todo-list/backend/db/migrations"
+	"github.com/Tanzor-Disco/based-todo-list/backend/server"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -22,5 +22,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Fatalf("server error: %v",server.Run(URI))
+	log.Fatalf("server error: %v", server.Run(URI))
 }
