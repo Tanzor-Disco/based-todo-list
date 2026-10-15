@@ -4,6 +4,9 @@
      push:
        branches:
          - lab3
+       paths:
+         - ".github/workflows/ci-bad.yml"
+         - "compose.deploy.bad.yaml"
 
    permissions:
      contents: read
