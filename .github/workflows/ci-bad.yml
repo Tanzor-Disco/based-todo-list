@@ -1,0 +1,24 @@
+   name: Bad CI
+
+   on:
+     push:
+       branches:
+         - lab3
+
+   permissions:
+     contents: read
+
+   jobs:
+     build:
+       name: Build Docker image
+       runs-on: ubuntu-24.04
+
+       steps:
+         - name: Checkout repository
+           uses: actions/checkout@main
+
+         - name: Build image
+           run: docker build -f backend/Dockerfile.bad -t todo-bad:latest ./backend
+
+         - name: Show image
+           run: docker image ls todo-bad
