@@ -42,19 +42,56 @@
 
          - name: Push image
            run: docker push "$IMAGE"
-     runner-check:
-       name: Check deployment machine
+
+     deploy:
+       name: Deploy on local machine
        needs: build
        runs-on: [self-hosted, linux, x64, todo-deploy]
 
-       steps:
-         - name: Show machine
-           run: |
-             whoami
-             hostname
+       permissions:
+         contents: read
+         packages: read
 
-         - name: Check Docker
+       env:
+         DOCKER_CONFIG: ${{ runner.temp }}/docker-config-bad
+
+       steps:
+         - name: Checkout repository
+           uses: actions/checkout@main
+
+         - name: Prepare image name
            run: |
-             docker version
-             docker compose version
-             docker ps
+             echo "APP_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-bad:latest" >> "$GITHUB_ENV"
+
+         - name: Login to GHCR
+           env:
+             GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           run: |
+             mkdir -p "$DOCKER_CONFIG"
+             echo "$GHCR_TOKEN" | docker login ghcr.io \
+               --username "$GITHUB_ACTOR" \
+               --password-stdin
+
+         - name: Pull images
+           run: |
+             docker compose \
+               --env-file "$HOME/todo-deploy/.env" \
+               -p todo-lab3-bad \
+               -f compose.deploy.bad.yaml \
+               pull
+
+         - name: Start application
+           run: |
+             docker compose \
+               --env-file "$HOME/todo-deploy/.env" \
+               -p todo-lab3-bad \
+               -f compose.deploy.bad.yaml \
+               up -d
+
+         - name: Show containers
+           run: |
+             docker compose \
+               --env-file "$HOME/todo-deploy/.env" \
+               -p todo-lab3-bad \
+               -f compose.deploy.bad.yaml \
+               ps
