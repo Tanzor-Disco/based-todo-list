@@ -42,3 +42,19 @@
 
          - name: Push image
            run: docker push "$IMAGE"
+   runner-check:
+       name: Check deployment machine
+       needs: build
+       runs-on: [self-hosted, linux, x64, todo-deploy]
+
+       steps:
+         - name: Show machine
+           run: |
+             whoami
+             hostname
+
+         - name: Check Docker
+           run: |
+             docker version
+             docker compose version
+             docker ps
