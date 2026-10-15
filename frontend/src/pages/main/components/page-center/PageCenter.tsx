@@ -23,8 +23,8 @@ export default function PageCenter() {
 			setTasks(tasks)
 		}
 		fetchTasks()
-	},[]) 
-	
+	},[navigate])
+
 
 	return (
 		<section className="tasks-container">
