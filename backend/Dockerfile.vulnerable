@@ -1,0 +1,19 @@
+   FROM golang:1.26.4 AS builder
+
+   WORKDIR /app
+
+   COPY go.mod go.sum ./
+   RUN go mod download
+
+   COPY . .
+   RUN CGO_ENABLED=0 go build -o todo-backend .
+
+   FROM debian:bullseye-20210902@sha256:2c4d8b742bed07efe6d262942d9ebdbe2143f6aeb76d2935807e1b81385b974a
+
+   WORKDIR /app
+
+   COPY --from=builder /app/todo-backend .
+
+   USER 65532:65532
+
+   CMD ["./todo-backend"]
