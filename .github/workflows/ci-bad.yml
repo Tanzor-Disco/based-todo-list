@@ -52,9 +52,6 @@
          contents: read
          packages: read
 
-       env:
-         DOCKER_CONFIG: ${{ runner.temp }}/docker-config-bad
-
        steps:
          - name: Checkout repository
            uses: actions/checkout@main
@@ -62,6 +59,7 @@
          - name: Prepare image name
            run: |
              echo "APP_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-bad:latest" >> "$GITHUB_ENV"
+             echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-config-bad" >> "$GITHUB_ENV"
 
          - name: Login to GHCR
            env:
