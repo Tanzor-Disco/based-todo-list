@@ -7,18 +7,38 @@
 
    permissions:
      contents: read
+     packages: write
 
    jobs:
      build:
-       name: Build Docker image
+       name: Build and publish Docker image
        runs-on: ubuntu-24.04
 
        steps:
          - name: Checkout repository
            uses: actions/checkout@main
 
+         - name: Prepare image name
+           run: |
+             echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-bad:latest" >> "$GITHUB_ENV"
+
          - name: Build image
-           run: docker build -f backend/Dockerfile.bad -t todo-bad:latest ./backend
+           run: |
+             docker build \
+               -f backend/Dockerfile.bad \
+               -t "$IMAGE" \
+               ./backend
 
          - name: Show image
-           run: docker image ls todo-bad
+           run: docker image ls "$IMAGE"
+
+         - name: Login to GHCR
+           env:
+             GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           run: |
+             echo "$GHCR_TOKEN" | docker login ghcr.io \
+               --username "$GITHUB_ACTOR" \
+               --password-stdin
+
+         - name: Push image
+           run: docker push "$IMAGE"
