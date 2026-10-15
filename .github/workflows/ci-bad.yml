@@ -42,7 +42,7 @@
 
          - name: Push image
            run: docker push "$IMAGE"
-   runner-check:
+     runner-check:
        name: Check deployment machine
        needs: build
        runs-on: [self-hosted, linux, x64, todo-deploy]
