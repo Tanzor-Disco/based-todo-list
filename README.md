@@ -11,3 +11,6 @@ Full-stack веб-приложение для управления задача�
 ## Отчёты
 
 - [Лабораторная работа 0](reports/lab0.md)
+- [Лабораторная работа 1]()
+- [Лабораторная работа 2](https://github.com/Tanzor-Disco/based-todo-list/blob/lab2/reports/lab2.md)
+- [Лабораторная работа 3](https://github.com/Tanzor-Disco/based-todo-list/blob/lab3/reports/lab3.md)
