@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-//testing
+//123123
 
 func main() {
 	err := godotenv.Load()

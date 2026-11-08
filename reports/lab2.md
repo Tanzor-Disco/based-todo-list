@@ -94,12 +94,9 @@ CMD ["./todo-backend"]
 
 Для сравнения были собраны два образа: `todo-good` и `todo-bad`. Их размеры получены с помощью команды `docker images`.
 
-| Показатель | Хороший образ | Плохой образ |
-|---|---:|---:|
-| Content Size | 13,1 МБ | 374 МБ |
-| Disk Usage | 39,7 МБ | 1,6 ГБ |
+![Размеры хорошего и плохого образов](lab2-screenshots/chapter5/sizes.png)
 
-По показателю Content Size плохой образ примерно в 28,5 раза больше хорошего.
+По показателю Content Size плохой образ примерно в 28,3 раза больше хорошего.
 
 Это объясняется многоэтапной сборкой: в хорошем образе остаются исполняемый файл и окружение для запуска, а в плохом варианте сохраняются компилятор и инструменты разработки.
 
@@ -109,12 +106,13 @@ CMD ["./todo-backend"]
 
 Сначала было измерено время сборки без изменений исходного кода. Затем в Go-файл была добавлена одна строка-комментарий, после чего сборка была повторена. Измерения выполнялись командой `time docker build`.
 
-| Сценарий | Хороший Dockerfile | Плохой Dockerfile |
-|---|---:|---:|
-| Без изменений исходного кода | 1,851 с | 0,638 с |
-| После изменения исходного кода | 10,999 с | 19,128 с |
+Хороший Dockerfile:
+![Время пересборки хорошего образа после изменения кода](lab2-screenshots/chapter6/good.png)
 
-После изменения исходного кода хороший вариант собрался примерно в 1,74 раза быстрее плохого.
+Плохой Dockerfile:
+![Время пересборки плохого образа после изменения кода](lab2-screenshots/chapter6/bad.png)
+
+После изменения исходного кода хороший вариант собрался примерно в 1,78 раза быстрее плохого.
 
 В хорошем Dockerfile зависимости загружаются до копирования исходного кода, поэтому изменение исходного файла не требует повторного выполнения `go mod download`, если `go.mod` и `go.sum` остались прежними.
 
@@ -132,9 +130,7 @@ docker compose exec backend whoami
 
 Результат:
 
-```text
-appuser
-```
+![Запуск backend от непривилегированного пользователя](lab2-screenshots/chapter7/user.png)
 
 Проверка подтвердила, что приложение запускается от имени пользователя `appuser`, а не `root`. Это снижает потенциальные последствия компрометации приложения за счёт ограничения его привилегий.
 
@@ -144,28 +140,32 @@ appuser
 
 ### 8.1. Хорошая конфигурация compose.yaml
 
+Параметры подключения подставляются из файла `.env`, расположенного рядом с compose-файлом. URI для backend формируется из тех же переменных, которые используются для инициализации PostgreSQL
+
 ```yaml
 services:
   backend:
     build: ./backend
-    env_file:
-      - ./.env
+    environment:
+      URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
     ports:
       - "80:8080"
     depends_on:
       postgres:
-        condition: "service_healthy"
+          condition: "service_healthy"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-
+  
   postgres:
-    image: postgres:18
-    env_file:
-      - ./.env
+    image: postgres:18 
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -173,7 +173,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+    
 volumes:
   postgres_data:
 ```
@@ -230,30 +230,48 @@ services:
 
 Для проверки состояния запущенных сервисов была выполнена команда `docker compose ps`.
 
-```text
-CONTAINER ID   IMAGE                     COMMAND                  CREATED          STATUS                    PORTS                                     NAMES
-0e27ca7b8853   based-todo-list-backend   "./todo-backend"         44 minutes ago   Up 16 minutes (healthy)   0.0.0.0:80->8080/tcp, [::]:80->8080/tcp   based-todo-list-backend-1
-5702017fe532   postgres:18               "docker-entrypoint.s…"   53 minutes ago   Up 16 minutes (healthy)   5432/tcp                                  based-todo-list-postgres-1
-```
+![Состояние контейнеров backend и PostgreSQL — healthy](lab2-screenshots/chapter9/status.png)
 
 Оба контейнера находятся в состоянии `healthy`, что подтверждает успешное прохождение настроенных проверок состояния backend и PostgreSQL.
 
 Порт 80 опубликован для доступа к веб-приложению. Порт PostgreSQL не опубликован на хосте, поэтому подключение к базе данных выполняется через внутреннюю сеть Docker Compose.
 
-### 10. Сохранение данных PostgreSQL
+## 10. Сохранение данных PostgreSQL
 
-Для хранения данных PostgreSQL используется именованный том `postgres_data`, подключённый к каталогу данных базы. Благодаря этому данные хранятся отдельно от жизненного цикла контейнера.
+Для хранения данных PostgreSQL используется именованный том `postgres_data`, подключённый к каталогу `/var/lib/postgresql`. Фактическое имя тома — `based-todo-list_postgres_data`
 
-Для проверки сохранности данных контейнеры были остановлены и запущены повторно с помощью команд:
+![Создание пользователя через приложение](lab2-screenshots/chapter10/site.png)
+
+Перед проверкой в таблице `users` была создана запись пользователя с `id = 1` и именем `Шизейший`. Содержимое таблицы и подключение именованного тома проверены командами:
 
 ```bash
-docker compose down
-docker compose up -d
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TABLE users;"'
+docker inspect "$(docker compose ps -q postgres)" --format '{{json .Mounts}}'
 ```
 
-При остановке контейнеров именованный том не удалялся. После повторного запуска приложения сохранённая пользовательская сессия продолжила работать: приложение автоматически перенаправило пользователя на главную страницу.
+![Запись в БД и подключённый том до удаления контейнера](lab2-screenshots/chapter10/before.png) 
 
-Это подтверждает сохранение состояния приложения после пересоздания контейнеров и согласуется с тем, что данные PostgreSQL хранятся в именованном томе, а не только внутри контейнера.
+Затем контейнер PostgreSQL был остановлен и удалён командой `docker rm`. После этого сервис был создан заново без удаления именованного тома:
+
+```bash
+docker compose stop postgres
+docker rm "$(docker compose ps -aq postgres)"
+docker compose up -d
+docker compose ps
+```
+
+![Удаление и пересоздание контейнера PostgreSQL](lab2-screenshots/chapter10/deleting.png) 
+
+После пересоздания контейнера был повторно выполнен запрос:
+
+```bash
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TABLE users;"'
+```
+
+![Запись в БД после пересоздания контейнера](lab2-screenshots/chapter10/after.png) 
+
+Запись с `id = 1` сохранилась без изменений. Проверка подтверждает, что данные PostgreSQL сохраняются в именованном томе и переживают удаление контейнера
+
 ## 11. Сетевая организация
 
 Frontend приложения встроен в Go backend и не является отдельным сетевым сервисом. Backend взаимодействует с PostgreSQL через внутреннюю сеть Docker Compose. Порт PostgreSQL не опубликован на хост, поэтому подключение к базе через опубликованный порт извне не предусмотрено.
